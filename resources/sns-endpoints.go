@@ -17,10 +17,30 @@ func init() {
 func ListSNSEndpoints(sess *session.Session) ([]Resource, error) {
 	svc := sns.New(sess)
 	resources := []Resource{}
+	applicationPlatforms := []*sns.PlatformApplication{}
+
+	appParams := &sns.ListPlatformApplicationsInput{}
+
+	for {
+		resp, err := svc.ListPlatformApplications(appParams)
+		if err != nil {
+			return nil, err
+		}
+
+		for _, platformApplication := range resp.PlatformApplications {
+			applicationPlatforms = append(applicationPlatforms, platformApplication)
+		}
+		if resp.NextToken == nil {
+			break
+		}
+
+		appParams.NextToken = resp.NextToken
+	}
 
 	params := &sns.ListEndpointsByPlatformApplicationInput{}
 
-	for {
+	for _, platformApplication := range applicationPlatforms {
+		params.PlatformApplicationArn = platformApplication.PlatformApplicationArn
 		resp, err := svc.ListEndpointsByPlatformApplication(params)
 		if err != nil {
 			return nil, err
